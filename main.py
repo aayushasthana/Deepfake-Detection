@@ -5,6 +5,7 @@ from video_utils import *
 from encrypt_utils import *
 import argparse
 import time
+import copy
 
 
 TILE_SIZE = 8
@@ -33,8 +34,16 @@ if __name__ == '__main__':
     frame_count, w, h, fps, frames = read_video(video_name)
     print("Video:{} Frame_count:{} Width:{} Height:{} FPS:{}".format(video_name, frame_count, w, h, fps))
     title = video_name + "pre-processing"
+
+
+
     show_videos_from_frames(frames, title)
 
+    original_frame_0 = copy.copy(frames[0])
+
+    named_tuple = time.localtime()  # get struct_time
+    time_string = time.strftime("%m/%d/%Y, %H:%M:%S", named_tuple)
+    print("Starting processing ...{} ".format(time_string))
     row_count = int(w/TILE_SIZE)
     col_count = int(h/TILE_SIZE)
     for f in range(0,first_n_frames):
@@ -46,7 +55,15 @@ if __name__ == '__main__':
         print("{}-{} seconds".format(f, end_time-start_time))
 
     title = video_name + "post-processing"
-    show_videos_from_frames(frames,title)
+    #show_videos_from_frames(frames,title)
+
+    named_tuple = time.localtime()  # get struct_time
+    time_string = time.strftime("%m/%d/%Y, %H:%M:%S", named_tuple)
+    print("Ending processing ...{} ".format(time_string))
+
+    show_frames_side_by_side(0,original_frame_0,"original",frames[0],"embedded signature")
+
+
 
 
 

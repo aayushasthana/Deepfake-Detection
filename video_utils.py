@@ -47,4 +47,16 @@ def show_videos_from_frames(frames, caption):
         if cv2.waitKey(25) & 0xFF == ord('q'):
             break
 
+def show_frames_side_by_side(frame_number,f1,caption1, f2, caption2):
+
+    f, ax = plt.subplots(2, sharex=True)
+    plt.suptitle("f#{} {}  ".format(frame_number, f1.shape))
+    ax[0].imshow(f1)
+    ax[0].set_title(caption1)
+    ax[1].imshow(f2)
+    ax[1].set_title(caption2)
+
+    plt.show()
+
+
 
