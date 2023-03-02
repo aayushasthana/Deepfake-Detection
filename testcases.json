@@ -1,0 +1,52 @@
+{
+  "basepath": "",
+  "datapath": "",
+
+  "testcase":[
+  {
+    "Test-ID": 1,
+    "Description" : "Experiment-1",
+    "metadata_path": " ",
+    "metadata" : "metadata.json",
+    "video_count": 2,
+    "frame_count": 15,
+    "FileA": {
+      "file" : "real",
+      "transformations":[
+        {"op": "embed"},
+        {"op": "embed"}
+      ]
+    },
+    "FileB":{
+      "file" : "real",
+      "transformations":[
+        {"op": "embed"},
+        {"op": "embed"}
+      ]
+    },
+    "results" : "test1.results"
+  },
+   {
+    "Test-ID": 1,
+    "Description" : "Experiment-1",
+    "metadata" : "metadata.json",
+    "video_count": 2,
+    "frame_count": 15,
+    "FileA": {
+      "file" : "real",
+      "transformations":[
+        {"op": "embed"},
+        {"op": "embed"}
+      ]
+    },
+    "FileB":{
+      "file" : "real",
+      "transformations":[
+        {"op": "embed"},
+        {"op": "embed"}
+      ]
+    },
+    "results" : "test2.results"
+  }]
+
+}
