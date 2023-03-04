@@ -122,3 +122,76 @@ def embedSignature(frames, h, w, count, publicKey, privateKey):
                 progress_bar.update(1)
 
     return np.array(frames)
+
+
+def checkSignature(frames, h, w, count, publicKey, privateKey):
+    tqdm_value = count * int((h / TILE_SIZE) * (w / TILE_SIZE))
+    progress_bar = tqdm(desc="Check for Signatures", total=tqdm_value)
+
+    matching = []
+    mismatch = []
+
+    for f in range(0, count):
+        for row in range(0, h, TILE_SIZE):
+            for col in range(0, w, TILE_SIZE):
+                currTile = np.array(frames[f][row:row + TILE_SIZE, col:col + TILE_SIZE])
+                signatureA = "1"
+                signatureB = "2"
+                # Extracting the signature
+                try:
+                    extractedSignature = extractSignature(currTile)
+                    signatureA = asymmetric_decrypt(extractedSignature, privateKey)
+
+                except:
+                    print(f"A:Decrypt Failed F#{f}:({row},{col})")
+
+                else:
+                    AvgR, AvgG, AvgB = Avg_tile(frames, f, row, col)
+                    signatureB = createSignature(AvgR, AvgG, AvgB, f, row, col)
+
+                if signatureA == signatureB:
+                    matching.append((row, col))
+                else:
+                    mismatch.append((row, col))
+                    #print(f"A: {signatureA} & B: {signatureB}")
+
+                progress_bar.update(1)
+
+    return matching, mismatch
+
+
+def checkSignature2(frames1, frames2, h, w, count, publicKey, privateKey):
+    tqdm_value = count * int((h / TILE_SIZE) * (w / TILE_SIZE))
+    progress_bar = tqdm(desc="Check for Signatures", total=tqdm_value)
+
+    matching = []
+    mismatch = []
+
+    for f in range(0, count):
+        for row in range(0, h, TILE_SIZE):
+            for col in range(0, w, TILE_SIZE):
+                currTile1 = np.array(frames1[f][row:row + TILE_SIZE, col:col + TILE_SIZE])
+                currTile2 = np.array(frames2[f][row:row + TILE_SIZE, col:col + TILE_SIZE])
+                signatureA = "1"
+                signatureB = "2"
+                # Extracting the signature
+                try:
+                    extractedSignature = extractSignature(currTile1)
+                    signatureA = asymmetric_decrypt(extractedSignature, privateKey)
+
+                except:
+                    print(f"A:Decrypt Failed F#{f}:({row},{col})")
+
+                else:
+                    AvgR, AvgG, AvgB = Avg_tile(frames2, f, row, col)
+                    signatureB = createSignature(AvgR, AvgG, AvgB, f, row, col)
+
+                if signatureA == signatureB:
+                    matching.append((row, col))
+                else:
+                    mismatch.append((row, col))
+                    #print(f"A: {signatureA} & B: {signatureB}")
+
+                progress_bar.update(1)
+
+    return matching, mismatch

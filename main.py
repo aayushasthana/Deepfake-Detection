@@ -69,7 +69,26 @@ if __name__ == '__main__':
 
         frame_count = numFrames
 
-        if testcase == "RR'" or testcase == "R'R":
+        if testcase == "F":
+            matching, mismatch = checkSignature(F_frames, h, w, frame_count, publicKey, privateKey)
+            print(f"Mismatch = {len(mismatch)}, Matching = {len(matching)}")
+
+        elif testcase == "R":
+            matching, mismatch = checkSignature(R_frames, h, w, frame_count, publicKey, privateKey)
+            print(f"Mismatch = {len(mismatch)}, Matching = {len(matching)}")
+
+        elif testcase == "R'":
+            RPrime_frames = embedSignature(R_frames, h, w, frame_count, publicKey, privateKey)
+            matching, mismatch = checkSignature(RPrime_frames, h, w, frame_count, publicKey, privateKey)
+            print(f"Mismatch = {len(mismatch)}, Matching = {len(matching)}")
+
+        elif testcase == "F'":
+            RPrime_frames = embedSignature(R_frames, h, w, frame_count, publicKey, privateKey)
+            matching, mismatch = checkSignature2(RPrime_frames, F_frames, h, w, frame_count, publicKey, privateKey)
+            tileCount = int((h / TILE_SIZE) * (w / TILE_SIZE))
+            print(f"Mismatch = {len(mismatch)}, Matching = {len(matching)}")
+
+        elif testcase == "RR'" or testcase == "R'R":
             print(f"[{i}/{count}] RR' on {R}")
             RPrime_frames = embedSignature(R_frames, h, w, frame_count, publicKey, privateKey)
             # frame_count, w, h, fps, R_frames = read_video(R)  # this could be optimized
@@ -110,15 +129,23 @@ if __name__ == '__main__':
 
         match_counter, mismatch_counter = doAnalysis(matching, mismatch, int((h / TILE_SIZE) * (w / TILE_SIZE)),
                                                      frame_count)
-        topTiles = mismatch_counter.most_common(mismatch_counter.__sizeof__())
-        print(topTiles)
 
+        #Generating Regular Heat Map
+        topTiles = mismatch_counter.most_common(mismatch_counter.__sizeof__())
         for j in range(0, frame_count):
             for k in range(0, len(topTiles)):
-                heatTile(FPrime_frames, j, topTiles[k][0][0], topTiles[k][0][1], numFrames, topTiles[k][1])
+                heatTile(R_frames, j, topTiles[k][0][0], topTiles[k][0][1], numFrames, topTiles[k][1])
 
-        showVideoSideBySide(RPrime_frames, "A", FPrime_frames, "B", frame_count)
+        #Generating Pixel Heat Map
+        damage = pixelHeatMap(R_frames[0], F_frames[0])
+        for row in range(0, h):
+            for col in range(0, w):
+                heatTile2(F_frames, 0, row, col, damage[row][col])
+
+        showVideoSideBySide(R_frames, "F' Heat Map", F_frames, "Pixel Heat Map", frame_count)
 
         with open(results + "-" + str(i), 'wb') as fp:
             pickle.dump(matching, fp)
             pickle.dump(mismatch, fp)
+
+
