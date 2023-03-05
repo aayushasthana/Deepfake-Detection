@@ -2,7 +2,11 @@
 import pickle
 import json
 import argparse
+import time
 from collections import Counter
+
+import numpy as np
+
 from globals import *
 from video_utils import *
 from encrypt_utils import *
@@ -59,17 +63,43 @@ if __name__ == '__main__':
     publicKey, privateKey = get_keys()
     print(f"Testcase parameters: count:{count},framecount:{numFrames}, {testcase} {json_file} {results}")
     metadata_count, metadata_dict = getMetadata(json_file)
-    for i in range(0, count):
+    if count == -1:
+        count = metadata_count
+    print(f"Metadata Count = {metadata_count}, Count = {count}")
 
+    f = open("ExperimentResults/" + results + "0.txt", "a")
+    f.write("RealVideoName,FakeVideoName,TotalFrames,TotalTiles,RuntimeRPrime,RuntimeFPrime,MismatchingTilesRPrime,MatchingTilesRPrime,MismatchingTilesFPrime,MatchingTilesFPrime\n")
+    for i in range(0, count):
+        if i % 100 == 0 and i != 0:
+            f.close()
+            print(str(int(i/100)) + "done")
+            f = open("ExperimentResults/" + results + str(int(i/100)) + ".txt", "a")
+            f.write("RealVideoName,FakeVideoName,TotalFrames,TotalTiles,RuntimeRPrime,RuntimeFPrime,MismatchingTilesRPrime,MatchingTilesRPrime,MismatchingTilesFPrime,MatchingTilesFPrime\n")
+
+        startTime = time.time()
         R = metadata_dict[int(i)][1]
         F = metadata_dict[int(i)][0]
         frames = []
         frame_count, w, h, fps, R_frames = read_video(R)
         frame_count, w, h, fps, F_frames = read_video(F)
 
-        frame_count = numFrames
+        if numFrames != -1:
+            frame_count = numFrames
 
-        if testcase == "F":
+        if testcase == "E":
+            RPrime_frames = embedSignature(R_frames, h, w, frame_count, publicKey, privateKey)
+
+            #R'
+            startRPrime = time.time()
+            matchingRPrime, mismatchRPrime = checkSignature(RPrime_frames, h, w, frame_count, publicKey, privateKey)
+            runtimeRPrime = time.time() - startRPrime
+
+            #F'
+            startFPrime = time.time()
+            matchingFPrime, mismatchFPrime = checkSignature2(RPrime_frames, F_frames, h, w, frame_count, publicKey, privateKey)
+            runtimeFPrime = time.time() - startFPrime
+
+        elif testcase == "F":
             matching, mismatch = checkSignature(F_frames, h, w, frame_count, publicKey, privateKey)
             print(f"Mismatch = {len(mismatch)}, Matching = {len(matching)}")
 
@@ -85,7 +115,6 @@ if __name__ == '__main__':
         elif testcase == "F'":
             RPrime_frames = embedSignature(R_frames, h, w, frame_count, publicKey, privateKey)
             matching, mismatch = checkSignature2(RPrime_frames, F_frames, h, w, frame_count, publicKey, privateKey)
-            tileCount = int((h / TILE_SIZE) * (w / TILE_SIZE))
             print(f"Mismatch = {len(mismatch)}, Matching = {len(matching)}")
 
         elif testcase == "RR'" or testcase == "R'R":
@@ -127,25 +156,30 @@ if __name__ == '__main__':
                                                   h, w, frame_count,
                                                   publicKey, privateKey)
 
-        match_counter, mismatch_counter = doAnalysis(matching, mismatch, int((h / TILE_SIZE) * (w / TILE_SIZE)),
-                                                     frame_count)
+        #compute avg % percent diff in rgb across all frames
 
-        #Generating Regular Heat Map
-        topTiles = mismatch_counter.most_common(mismatch_counter.__sizeof__())
-        for j in range(0, frame_count):
-            for k in range(0, len(topTiles)):
-                heatTile(R_frames, j, topTiles[k][0][0], topTiles[k][0][1], numFrames, topTiles[k][1])
+        '''
+        frame_count, w, h, fps, R_frames = read_video(R)
+        redDiff = np.divide(np.abs(np.average(np.subtract(RPrime_frames[:, :, :, 0], R_frames[:, :, :, 0]))), np.average(R_frames[:, :, :, 0])) * 100
+        greenDiff = np.divide(np.abs(np.subtract(np.average(RPrime_frames[:, :, :, 1]), np.average(R_frames[:, :, :, 1]))), np.average(R_frames[:, :, :, 1])) * 100
+        blueDiff = np.divide(np.abs(np.subtract(np.average(RPrime_frames[:, :, :, 2]), np.average(R_frames[:, :, :, 2]))), np.average(R_frames[:, :, :, 2])) * 100
+        #print(f"redDiff = {redDiff}, greenDiff = {greenDiff}, blueDiff = {blueDiff}")
 
-        #Generating Pixel Heat Map
-        damage = pixelHeatMap(R_frames[0], F_frames[0])
-        for row in range(0, h):
-            for col in range(0, w):
-                heatTile2(F_frames, 0, row, col, damage[row][col])
+        maxRedDiff = np.divide(np.max(np.abs(np.subtract(RPrime_frames[:, :, :, 0], R_frames[:, :, :, 0]))), np.min(R_frames[:, :, :, 0])+1) * 100
+        print(np.max(np.abs(np.subtract(RPrime_frames[:, :, :, 0], R_frames[:, :, :, 0]))))
+        print(np.min(R_frames[:, :, :, 0]))
+        print(maxRedDiff)
+        #AvgPercentDiffRGB = (redDiff+greenDiff+blueDiff)/3
+        '''
 
-        showVideoSideBySide(R_frames, "F' Heat Map", F_frames, "Pixel Heat Map", frame_count)
+        #values for write
+        realVideoName = metadata_dict[i][1];
+        fakeVideoName = metadata_dict[i][0];
+        totalFrames = frame_count;
+        totalTiles = int((h / TILE_SIZE) * (w / TILE_SIZE)) * totalFrames
+        #f.write("RealVideoName,FakeVideoName,TotalFrames,TotalTiles,RuntimeRPrime,RuntimeFPrime,MismatchingTilesRPrime,MatchingTilesRPrime,MismatchingTilesFPrime,MatchingTilesFPrime")
+        f.write(f"{realVideoName},{fakeVideoName},{totalFrames},{totalTiles},{runtimeRPrime},{runtimeFPrime},{len(mismatchRPrime)},{len(matchingRPrime)},{len(mismatchFPrime)},{len(matchingFPrime)}\n")
 
-        with open(results + "-" + str(i), 'wb') as fp:
-            pickle.dump(matching, fp)
-            pickle.dump(mismatch, fp)
+    f.close()
 
 
