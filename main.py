@@ -1,4 +1,3 @@
-
 import pickle
 import json
 import argparse
@@ -12,6 +11,11 @@ from video_utils import *
 from encrypt_utils import *
 from signature_utils import *
 from analysis_util import *
+from facenet_pytorch import MTCNN, InceptionResnetV1, extract_face
+import ssl
+import platform
+import torch
+from face_detect import *
 
 def getMetadata(jsonFile):
     json_filename = BASE_PATH + DATA_PATH + FILE_PATH + jsonFile
@@ -61,6 +65,17 @@ if __name__ == '__main__':
     results = args["results"]
 
     publicKey, privateKey = get_keys()
+    #-------- Code to enable Face detection using MTCNN --------
+    #-------- look at enabling M1 support ----------------------
+    ssl._create_default_https_context = ssl._create_unverified_context
+    mps = torch.backends.mps.is_available()
+    print(f" Platform {platform.platform()} M1: {mps}")
+    if mps :
+        torch.device('mps')
+    else:
+        torch.device('cpu')
+    #-----------------------------------------------------------
+
     print(f"Testcase parameters: count:{count},framecount:{numFrames}, {testcase} {json_file} {results}")
     metadata_count, metadata_dict = getMetadata(json_file)
     if count == -1:
@@ -85,6 +100,20 @@ if __name__ == '__main__':
 
         if numFrames != -1:
             frame_count = numFrames
+
+        if testcase == "face":
+            print(f"Video name : {R} Frame count {frame_count}")
+            st = time.time()
+            faceTiles, failed_detection_count = detectFaceMTCNN(R_frames, frame_count)
+            frame_count, w, h, fps, R_frames = read_video(R)
+            if numFrames != -1:
+                frame_count = numFrames
+            RPrime_frames = embedSignature(R_frames, h, w, frame_count, publicKey, privateKey)
+            matchingF, mismatchF = checkSignature3(RPrime_frames, F_frames, h, w, faceTiles, 4*TILE_SIZE, 4*TILE_SIZE, frame_count, publicKey, privateKey)
+
+            print(f"Video name:{F} FC:{frame_count} Mismatch:{len(mismatchF)} Match:{len(matchingF)} %Mismatch: {100* len(mismatchF)/(4*4*frame_count)}%  FDC:{failed_detection_count} time:{time.time() - st}s")
+
+
 
         if testcase == "E":
             RPrime_frames = embedSignature(R_frames, h, w, frame_count, publicKey, privateKey)
@@ -158,19 +187,7 @@ if __name__ == '__main__':
 
         #compute avg % percent diff in rgb across all frames
 
-        '''
-        frame_count, w, h, fps, R_frames = read_video(R)
-        redDiff = np.divide(np.abs(np.average(np.subtract(RPrime_frames[:, :, :, 0], R_frames[:, :, :, 0]))), np.average(R_frames[:, :, :, 0])) * 100
-        greenDiff = np.divide(np.abs(np.subtract(np.average(RPrime_frames[:, :, :, 1]), np.average(R_frames[:, :, :, 1]))), np.average(R_frames[:, :, :, 1])) * 100
-        blueDiff = np.divide(np.abs(np.subtract(np.average(RPrime_frames[:, :, :, 2]), np.average(R_frames[:, :, :, 2]))), np.average(R_frames[:, :, :, 2])) * 100
-        #print(f"redDiff = {redDiff}, greenDiff = {greenDiff}, blueDiff = {blueDiff}")
 
-        maxRedDiff = np.divide(np.max(np.abs(np.subtract(RPrime_frames[:, :, :, 0], R_frames[:, :, :, 0]))), np.min(R_frames[:, :, :, 0])+1) * 100
-        print(np.max(np.abs(np.subtract(RPrime_frames[:, :, :, 0], R_frames[:, :, :, 0]))))
-        print(np.min(R_frames[:, :, :, 0]))
-        print(maxRedDiff)
-        #AvgPercentDiffRGB = (redDiff+greenDiff+blueDiff)/3
-        '''
 
         #values for write
         realVideoName = metadata_dict[i][1];
@@ -178,8 +195,7 @@ if __name__ == '__main__':
         totalFrames = frame_count;
         totalTiles = int((h / TILE_SIZE) * (w / TILE_SIZE)) * totalFrames
         #f.write("RealVideoName,FakeVideoName,TotalFrames,TotalTiles,RuntimeRPrime,RuntimeFPrime,MismatchingTilesRPrime,MatchingTilesRPrime,MismatchingTilesFPrime,MatchingTilesFPrime")
-        f.write(f"{realVideoName},{fakeVideoName},{totalFrames},{totalTiles},{runtimeRPrime},{runtimeFPrime},{len(mismatchRPrime)},{len(matchingRPrime)},{len(mismatchFPrime)},{len(matchingFPrime)}\n")
+        #f.write(f"{realVideoName},{fakeVideoName},{totalFrames},{totalTiles},{runtimeRPrime},{runtimeFPrime},{len(mismatchRPrime)},{len(matchingRPrime)},{len(mismatchFPrime)},{len(matchingFPrime)}\n")
 
     f.close()
-
 
