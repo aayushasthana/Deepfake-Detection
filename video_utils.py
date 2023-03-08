@@ -27,6 +27,15 @@ def read_video(video_name):
     width = width - width % TILE_SIZE
     return count, width, height, fps, frames_array
 
+def binaryHeat(frames, frame_number, row, col, isGood):
+    tile = frames[frame_number][row:row + TILE_SIZE, col:col + TILE_SIZE]
+    tile[:, :, 0] = 0
+    if (isGood):
+        tile[:, :, 1] = 0
+        tile[:, :, 2] = 255
+    else:
+        tile[:, :, 1] = 255
+        tile[:, :, 2] = 0
 
 def heatTile(frames, frame_number, row, col, numFrames, numTileBroken):
     tile = frames[frame_number][row:row+TILE_SIZE, col:col+TILE_SIZE]
@@ -38,26 +47,6 @@ def heatTile(frames, frame_number, row, col, numFrames, numTileBroken):
     tile[:, :, 0] = 0
     tile[:, :, 1] = greenVal
     tile[:, :, 2] = redVal
-
-
-def heatTile2(frames, frame_number, row, col, damageFactor):
-    tile = frames[frame_number][row:row + TILE_SIZE, col:col + TILE_SIZE]
-
-    greenVal = 255 * (1 - damageFactor)
-    redVal = 255 * damageFactor
-
-    tile[:, :, 0] = 0
-    tile[:, :, 1] = greenVal
-    tile[:, :, 2] = redVal
-
-
-def pixelHeatMap(framesA, framesB):
-    framesC = np.abs(np.subtract(framesA, framesB))
-    framesCR = framesC[:, :, 0]
-    framesCG = framesC[:, :, 1]
-    framesCB = framesC[:, :, 2]
-    damageMap = (framesCR + framesCB + framesCG)/(255*3)
-    return damageMap
 
 
 def addTileBorder(frames, frame_number, row, col, numFrames, numTileBroken):

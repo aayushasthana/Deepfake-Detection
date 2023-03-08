@@ -100,19 +100,19 @@ if __name__ == '__main__':
 
         if numFrames != -1:
             frame_count = numFrames
+        # checking only for face tiles
 
         if testcase == "face":
-            print(f"Video name : {R} Frame count {frame_count}")
-            st = time.time()
-            faceTiles, failed_detection_count = detectFaceMTCNN(R_frames, frame_count)
-            frame_count, w, h, fps, R_frames = read_video(R)
-            if numFrames != -1:
-                frame_count = numFrames
+            print(f"Video name : {R}")
             RPrime_frames = embedSignature(R_frames, h, w, frame_count, publicKey, privateKey)
-            matchingF, mismatchF = checkSignature3(RPrime_frames, F_frames, h, w, faceTiles, 4*TILE_SIZE, 4*TILE_SIZE, frame_count, publicKey, privateKey)
+            # Detect faces tile
+            startRPrime = time.time()
+            faceTiles = detectFaceMTCNN(R_frames,frame_count)
+            print(faceTiles)
+            #matchingF, mismatchF = checkSignature3(RPrime_frames, F_frames, h, w, faceTiles, 4, 4, frame_count, publicKey, privateKey)
+            runtimeRPrime = time.time() - startRPrime
 
-            print(f"Video name:{F} FC:{frame_count} Mismatch:{len(mismatchF)} Match:{len(matchingF)} %Mismatch: {100* len(mismatchF)/(4*4*frame_count)}%  FDC:{failed_detection_count} time:{time.time() - st}s")
-
+            print(f"Mismatch = {len(mismatchF)}, Matching = {len(matchingF)}")
 
 
         if testcase == "E":

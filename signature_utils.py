@@ -196,54 +196,48 @@ def checkSignature2(frames1, frames2, h, w, count, publicKey, privateKey):
 
     return matching, mismatch
 
+def checkSignature3(framesA, framesB, h, w, faceTiles, face_h, face_w, count, publicKey, privateKey):
 
-def checkSignature3(framesA, framesB, h, w, faceTiles, fh, fw, count, publicKey, privateKey):
-    tqdm_value = count * int((fh / TILE_SIZE) * (fw / TILE_SIZE))
+    tqdm_value = count * int((h / TILE_SIZE) * (w / TILE_SIZE))
     progress_bar = tqdm(desc="Check for Signatures", total=tqdm_value)
 
     matching = []
     mismatch = []
-    signatureA = "1"
+    row_start = 0
+    col_start = 0
+    row_end = h
+    col_end = w
+    signatureA ="1"
     signatureB = "2"
 
-
     for f in range(0, count):
-
-        row_start = faceTiles[f][1]
-        col_start = faceTiles[f][2]
-        row_end = row_start + fh
-        col_end = col_start + fw
-
+        row_start = faceTiles[f][0]
+        col_start = faceTiles[f][1]
         # face box should not go out of the frame
-        if row_start + fh > h :
+        if row_start + face_h > h :
             row_end = h
-        if col_start + fw > w :
+        if col_start + face_w > w :
             col_end = w
-
-        #print(f"Face boundbox: TL:({row_start},{col_start}) TR:({row_start,col_end}) BL:({row_end,col_start}) BR:({row_end,col_end})")
-
+        print(f"Face boundbox: TL:({row_start},{col_start}) TR:({row_start,col_end}) BL:({row_end,col_start}) BR:({row_end,col_end})")
         for row in range(row_start, row_end, TILE_SIZE):
             for col in range(col_start, col_end, TILE_SIZE):
                 currTile = np.array(framesA[f][row:row + TILE_SIZE, col:col + TILE_SIZE])
-
                 # Extracting the signature
                 try:
                     extractedSignature = extractSignature(currTile)
                     signatureA = asymmetric_decrypt(extractedSignature, privateKey)
-                    #print(f"found: {signatureA}")
                 except:
                     print(f"A:Decrypt Failed F#{f}:({row},{col})")
-
-
-                AvgR, AvgG, AvgB = Avg_tile(framesB, f, row, col)
-                signatureB = createSignature(AvgR, AvgG, AvgB, f, row, col)
+                else:
+                    AvgR, AvgG, AvgB = Avg_tile(framesB, f, row, col)
+                    signatureB = createSignature(AvgR, AvgG, AvgB, f, row, col)
                 #print(f"Extracting-Comparing f#{f} ({row},{col})")
                 if signatureA == signatureB:
-                    matching.append((f,row, col))
-                    # print(f"Match    : f#{f} ({row},{col}) R':{signatureA} & F: {signatureB}")
+                    matching.append((row, col))
+                    print(f"Match    : f#{f} ({row},{col}) R':{signatureA} & F: {signatureB}")
                 else:
-                    mismatch.append((f,row, col))
-                    # print(f"Mismatch : f#{f} ({row},{col}) R':{signatureA} & F: {signatureB}")
+                    mismatch.append((row, col))
+                    print(f"Mismatch : f#{f} ({row},{col}) R':{signatureA} & F: {signatureB}")
 
                 progress_bar.update(1)
 
