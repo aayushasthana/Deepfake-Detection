@@ -49,16 +49,16 @@ def heatTile(frames, frame_number, row, col, numFrames, numTileBroken):
     tile[:, :, 2] = redVal
 
 
-def addTileBorder(frames, frame_number, row, col, numFrames, numTileBroken):
+def addTileBorder(frames, frame_number, row, col, numFrames, numTileBroken, numTotalTiles):
     tile = frames[frame_number][row:row+TILE_SIZE, col:col+TILE_SIZE]
 
-    damageFactor = numTileBroken/numFrames
+    damageFactor = int( numTileBroken/(numFrames*numTotalTiles))
     greenVal = 255 * (1-damageFactor)
     redVal = 255 * damageFactor
 
-    tile[0:5, :, 0] = 0
-    tile[0:5, :, 1] = greenVal
-    tile[0:5, :, 2] = redVal
+    tile[0:1, :, 0] = 0
+    tile[0:1, :, 1] = greenVal
+    tile[0:1, :, 2] = redVal
 
     tile[TILE_SIZE - 5:TILE_SIZE, :, 0] = 0
     tile[TILE_SIZE - 5:TILE_SIZE, :, 1] = greenVal
@@ -73,11 +73,12 @@ def addTileBorder(frames, frame_number, row, col, numFrames, numTileBroken):
     tile[:, TILE_SIZE - 5:TILE_SIZE, 2] = redVal
 
 
-def showVideoSideBySide(framesA, titleA, framesB, titleB, count):
+def showVideoSideBySide(frames_list, title_list, frame_count):
     while True:
-        for f in range(0, count):
-            cv2.imshow(titleA, framesA[f])
-            cv2.imshow(titleB, framesB[f])
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                break
+        for f in range(0, frame_count):
+            for i in range( 0, len(frames_list)):
+                cv2.imshow(title_list[i], frames_list[i][f])
+
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
         cv2.waitKey(0)
