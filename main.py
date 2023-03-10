@@ -40,13 +40,13 @@ def getMetadata(jsonFile):
 def cli_options():
     # construct the argument parse and parse the arguments
     ap = argparse.ArgumentParser()
-    ap.add_argument("-c", "--count", required=False,
+    ap.add_argument("-c", "--count", required=True,
                     help="count of videos")
-    ap.add_argument("-n", "--framecount", required=False,
+    ap.add_argument("-n", "--framecount", required=True,
                     help="frame count per video")
-    ap.add_argument("-j", "--json", required=False,
+    ap.add_argument("-j", "--json", required=True,
                     help="json meta data file path")
-    ap.add_argument("-t", "--test", required=False,
+    ap.add_argument("-t", "--test", required=True,
                     help="RR or RR' or RF or RF' or R'F' ")
     ap.add_argument("-r", "--results", required=False,
                     help="results file")
@@ -100,19 +100,19 @@ if __name__ == '__main__':
 
         if numFrames != -1:
             frame_count = numFrames
-        # checking only for face tiles
 
         if testcase == "face":
-            print(f"Video name : {R}")
+            print(f"Video name : {R} Frame count {frame_count}")
+            st = time.time()
+            faceTiles, failed_detection_count = detectFaceMTCNN(R_frames, frame_count)
+            frame_count, w, h, fps, R_frames = read_video(R)
+            if numFrames != -1:
+                frame_count = numFrames
             RPrime_frames = embedSignature(R_frames, h, w, frame_count, publicKey, privateKey)
-            # Detect faces tile
-            startRPrime = time.time()
-            faceTiles = detectFaceMTCNN(R_frames,frame_count)
-            print(faceTiles)
-            #matchingF, mismatchF = checkSignature3(RPrime_frames, F_frames, h, w, faceTiles, 4, 4, frame_count, publicKey, privateKey)
-            runtimeRPrime = time.time() - startRPrime
+            matchingF, mismatchF = checkSignature3(RPrime_frames, F_frames, h, w, faceTiles, 4*TILE_SIZE, 4*TILE_SIZE, frame_count, publicKey, privateKey)
 
-            print(f"Mismatch = {len(mismatchF)}, Matching = {len(matchingF)}")
+            print(f"Video name:{F} FC:{frame_count} Mismatch:{len(mismatchF)} Match:{len(matchingF)} %Mismatch: {100* len(mismatchF)/(4*4*frame_count)}%  FDC:{failed_detection_count} time:{time.time() - st}s")
+
 
 
         if testcase == "E":
